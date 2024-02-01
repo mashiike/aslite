@@ -1,0 +1,54 @@
+name: "parallel workflow"
+defaults:
+  retry:
+    - interval_seconds: 1
+      max_attempts: 3
+      backoff_rate: 2
+  catch:
+    - sns_topic_arn: "arn:aws:sns:us-east-1:123456789012:my-topic"
+
+branches:
+  ecs_task_run:
+    states:
+      - resource: "arn:aws:states:::ecs:runTask.sync"
+        parameters:
+          LaunchType: "FARGATE"
+          Cluster: "arn:aws:ecs:us-east-1:123456789012:cluster/MyECSCluster"
+          TaskDefinition: "arn:aws:ecs:us-east-1:123456789012:task-definition/MyTaskDefinition:1"
+          Overrides:
+            ContainerOverrides:
+              - Name: "container-name"
+                Environment:
+                  - Name: "TASK_TOKEN_ENV_VARIABLE"
+                    Value.$: "$$.Task.Token"
+  slack_notify:
+    defaults:
+      retry:
+        - interval_seconds: 10
+          max_attempts: 2
+          backoff_rate: 2
+      catch:
+        - sns_topic_arn: "arn:aws:sns:us-east-1:123456789012:my-topic2"
+    states:
+      - resource: "arn:aws:states:::http:invoke"
+        parameters:
+          Method: "POST"
+          Authentication:
+            ConnectionArn: "arn:aws:events:us-east-1:123456789012:connection/slack/00000000-0000-0000-0000-000000000000"
+          ApiEndpoint: https://slack.com/api/chat.postMessage
+          Headers:
+            Content-Type: "application/json"
+          RequestBody:
+            channel: "C123ABC456"
+            text: "I hope the tour went well, Mr. Wonka."
+            attachments:
+              - text: "Who wins the lifetime supply of chocolate?"
+                fallback: "You could be telling the computer exactly what it can do with a lifetime supply of chocolate."
+                color: "#3AA3E3"
+                attachment_type: "default"
+                callback_id: "select_simple_1234"
+                actions:
+                  - name: "winners_list"
+                    text: "Who should win?"
+                    type: "select"
+                    data_source: "users"

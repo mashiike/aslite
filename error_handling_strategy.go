@@ -67,7 +67,7 @@ func (ehsc *ErrorHandlingStrategyCatcher) NewStates() map[string]*State {
 func (ehs *ErrorHandlingStrategy) ApplyToStateMachine(sm *StateMachine) error {
 	needCacherNames := make(map[string]struct{})
 	for stateName, state := range sm.States {
-		names, err := ehs.ApplyToState(stateName, state)
+		names, err := ehs.ApplyToState("", stateName, state)
 		if err != nil {
 			return err
 		}
@@ -89,11 +89,14 @@ func (ehs *ErrorHandlingStrategy) ApplyToStateMachine(sm *StateMachine) error {
 	return nil
 }
 
-func (ehs *ErrorHandlingStrategy) ApplyToState(stateName string, s *State) ([]string, error) {
+func (ehs *ErrorHandlingStrategy) ApplyToState(catcherPrefix string, stateName string, s *State) ([]string, error) {
 	switch s.Type {
 	case "Fail", "Succeed", "Choice", "Wait", "Pass":
 		return nil, nil
 	case "Task":
+		if resource, ok := s.Extra["Resource"].(string); ok && resource == "arn:aws:states:::sns:publish" {
+			return nil, nil
+		}
 		if len(s.Retry) == 0 {
 			s.Retry = ehs.Retry
 		}
@@ -101,17 +104,21 @@ func (ehs *ErrorHandlingStrategy) ApplyToState(stateName string, s *State) ([]st
 			var needCacherNames []string
 			s.Catch = make([]*Catcher, len(ehs.Catch))
 			for i, c := range ehs.Catch {
+				catcherName := c.Name
+				if catcherPrefix != "" {
+					catcherName = catcherPrefix + c.Name
+				}
 				s.Catch[i] = &Catcher{
 					ErrorEquals: c.ErrorEquals,
 					ResultPath:  c.ResultPath,
-					Next:        c.Name,
+					Next:        catcherName,
 				}
 				extra := map[string]any{}
 				if c.Comment != "" {
 					extra["Comment"] = c.Comment
 				}
 				s.Catch[i].Extra = extra
-				needCacherNames = append(needCacherNames, c.Name)
+				needCacherNames = append(needCacherNames, catcherName)
 			}
 			return needCacherNames, nil
 		}
@@ -136,28 +143,29 @@ func (ehs *ErrorHandlingStrategy) ApplyToState(stateName string, s *State) ([]st
 }
 
 func (ehs *ErrorHandlingStrategy) ApplyToBranch(branchName string, b *Branch) error {
-	cachers := make([]*ErrorHandlingStrategyCatcher, len(ehs.Catch))
+	catchers := make([]*ErrorHandlingStrategyCatcher, len(ehs.Catch))
+	catcherPrefix := fmt.Sprintf("%s.", branchName)
 	for i, c := range ehs.Catch {
-		cachers[i] = &ErrorHandlingStrategyCatcher{
-			Name:        fmt.Sprintf("%s.%s", branchName, c.Name),
+		catchers[i] = &ErrorHandlingStrategyCatcher{
+			Name:        fmt.Sprintf("%s%s", catcherPrefix, c.Name),
 			ErrorEquals: c.ErrorEquals,
 			ResultPath:  c.ResultPath,
 			Comment:     c.Comment,
 			SNSTopicARN: c.SNSTopicARN,
 		}
 	}
-	needCacherNames := make(map[string]struct{})
+	needCatcherNames := make(map[string]struct{})
 	for stateName, state := range b.States {
-		names, err := ehs.ApplyToState(stateName, state)
+		names, err := ehs.ApplyToState(catcherPrefix, stateName, state)
 		if err != nil {
 			return err
 		}
 		for _, name := range names {
-			needCacherNames[name] = struct{}{}
+			needCatcherNames[name] = struct{}{}
 		}
 	}
-	for _, cacher := range cachers {
-		if _, ok := needCacherNames[cacher.Name]; !ok {
+	for _, cacher := range catchers {
+		if _, ok := needCatcherNames[cacher.Name]; !ok {
 			continue
 		}
 		for name, state := range cacher.NewStates() {

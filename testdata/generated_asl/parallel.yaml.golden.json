@@ -1,0 +1,148 @@
+{
+  "StartAt": "parallel workflow",
+  "States": {
+    "parallel workflow": {
+      "Branches": [
+        {
+          "Comment": "Branch ecs_task_run",
+          "StartAt": "ecs_task_run State1",
+          "States": {
+            "ecs_task_run State1": {
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "parallel workflow.Branches[0].DefaultCatcher1"
+                }
+              ],
+              "Next": "ecs_task_run:Success",
+              "Parameters": {
+                "Cluster": "arn:aws:ecs:us-east-1:123456789012:cluster/MyECSCluster",
+                "LaunchType": "FARGATE",
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Environment": [
+                        {
+                          "Name": "TASK_TOKEN_ENV_VARIABLE",
+                          "Value.$": "$$.Task.Token"
+                        }
+                      ],
+                      "Name": "container-name"
+                    }
+                  ]
+                },
+                "TaskDefinition": "arn:aws:ecs:us-east-1:123456789012:task-definition/MyTaskDefinition:1"
+              },
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Retry": [
+                {
+                  "BackoffRate": 2,
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3
+                }
+              ],
+              "Type": "Task"
+            },
+            "ecs_task_run:Success": {
+              "Type": "Succeed"
+            },
+            "parallel workflow.Branches[0].DefaultCatcher1": {
+              "Next": "parallel workflow.Branches[0].DefaultCatcher1:Faild",
+              "Parameters": {
+                "Message.$": "$",
+                "TopicArn": "arn:aws:sns:us-east-1:123456789012:my-topic"
+              },
+              "Resource": "arn:aws:states:::sns:publish",
+              "Type": "Task"
+            },
+            "parallel workflow.Branches[0].DefaultCatcher1:Faild": {
+              "Type": "Fail"
+            }
+          }
+        },
+        {
+          "Comment": "Branch slack_notify",
+          "StartAt": "slack_notify State1",
+          "States": {
+            "slack_notify State1": {
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "slack_notify.DefaultCatcher1"
+                }
+              ],
+              "Next": "slack_notify:Success",
+              "Parameters": {
+                "ApiEndpoint": "https://slack.com/api/chat.postMessage",
+                "Authentication": {
+                  "ConnectionArn": "arn:aws:events:us-east-1:123456789012:connection/slack/00000000-0000-0000-0000-000000000000"
+                },
+                "Headers": {
+                  "Content-Type": "application/json"
+                },
+                "Method": "POST",
+                "RequestBody": {
+                  "attachments": [
+                    {
+                      "actions": [
+                        {
+                          "data_source": "users",
+                          "name": "winners_list",
+                          "text": "Who should win?",
+                          "type": "select"
+                        }
+                      ],
+                      "attachment_type": "default",
+                      "callback_id": "select_simple_1234",
+                      "color": "#3AA3E3",
+                      "fallback": "You could be telling the computer exactly what it can do with a lifetime supply of chocolate.",
+                      "text": "Who wins the lifetime supply of chocolate?"
+                    }
+                  ],
+                  "channel": "C123ABC456",
+                  "text": "I hope the tour went well, Mr. Wonka."
+                }
+              },
+              "Resource": "arn:aws:states:::http:invoke",
+              "Retry": [
+                {
+                  "BackoffRate": 2,
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 2
+                }
+              ],
+              "Type": "Task"
+            },
+            "slack_notify.DefaultCatcher1": {
+              "Next": "slack_notify.DefaultCatcher1:Faild",
+              "Parameters": {
+                "Message.$": "$",
+                "TopicArn": "arn:aws:sns:us-east-1:123456789012:my-topic2"
+              },
+              "Resource": "arn:aws:states:::sns:publish",
+              "Type": "Task"
+            },
+            "slack_notify.DefaultCatcher1:Faild": {
+              "Type": "Fail"
+            },
+            "slack_notify:Success": {
+              "Type": "Succeed"
+            }
+          }
+        }
+      ],
+      "End": true,
+      "Type": "Parallel"
+    }
+  }
+}
