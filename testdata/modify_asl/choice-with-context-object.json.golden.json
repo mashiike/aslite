@@ -1,0 +1,22 @@
+{
+  "StartAt": "ChoiceState",
+  "States": {
+    "ChoiceState": {
+      "Choices": [
+        {
+          "IsNull": false,
+          "Next": "SucceedState",
+          "Variable": "$$.value"
+        }
+      ],
+      "Default": "FailState",
+      "Type": "Choice"
+    },
+    "FailState": {
+      "Type": "Fail"
+    },
+    "SucceedState": {
+      "Type": "Succeed"
+    }
+  }
+}

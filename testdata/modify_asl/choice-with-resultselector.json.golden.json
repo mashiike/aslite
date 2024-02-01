@@ -1,0 +1,23 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "Choices": [
+        {
+          "Next": "x",
+          "StringEquals": "x",
+          "Variable": "$.foo"
+        }
+      ],
+      "ResultSelector": {
+        "a": "x",
+        "b.$": "$.y",
+        "c.$": "$$.z"
+      },
+      "Type": "Choice"
+    },
+    "x": {
+      "Type": "Succeed"
+    }
+  }
+}

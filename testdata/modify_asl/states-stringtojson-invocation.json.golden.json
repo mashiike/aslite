@@ -1,0 +1,44 @@
+{
+  "StartAt": "p",
+  "States": {
+    "DefaultCatcher": {
+      "Next": "DefaultCatcher:Faild",
+      "Parameters": {
+        "Message.$": "$",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:my-topic"
+      },
+      "Resource": "arn:aws:states:::sns:publish",
+      "Type": "Task"
+    },
+    "DefaultCatcher:Faild": {
+      "Type": "Fail"
+    },
+    "p": {
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "DefaultCatcher",
+          "ResultPath": "$.error"
+        }
+      ],
+      "End": true,
+      "Resource": "foo:bar",
+      "ResultSelector": {
+        "abc.$": "States.StringToJson($.result)"
+      },
+      "Retry": [
+        {
+          "BackoffRate": 2,
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 3
+        }
+      ],
+      "Type": "Task"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "End": true,
+      "Parameters": "I'm a parameter!",
+      "Result": {
+        "foo": 1
+      },
+      "Type": "Pass"
+    }
+  }
+}

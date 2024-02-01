@@ -1,0 +1,10 @@
+{
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "Error": "Error",
+      "ErrorPath": "$.Error",
+      "Type": "Fail"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "End": true,
+      "ResultPath": "$.foo",
+      "Seconds": 1,
+      "Type": "Wait"
+    }
+  }
+}

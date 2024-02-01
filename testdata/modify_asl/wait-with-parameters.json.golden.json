@@ -1,0 +1,11 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "End": true,
+      "Parameters": "I'm a parameter!",
+      "Seconds": 1,
+      "Type": "Wait"
+    }
+  }
+}

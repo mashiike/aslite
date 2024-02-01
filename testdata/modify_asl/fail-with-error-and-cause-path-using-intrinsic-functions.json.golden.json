@@ -1,0 +1,10 @@
+{
+  "StartAt": "FailState",
+  "States": {
+    "FailState": {
+      "CausePath": "States.UUID()",
+      "ErrorPath": "States.Format('this is the error: {}, and this is the cause: {}', $.Error, $.Cause)",
+      "Type": "Fail"
+    }
+  }
+}

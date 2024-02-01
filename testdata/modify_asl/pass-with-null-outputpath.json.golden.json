@@ -1,0 +1,14 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "End": true,
+      "OutputPath": null,
+      "Result": {
+        "bar": 2,
+        "foo": 1
+      },
+      "Type": "Pass"
+    }
+  }
+}

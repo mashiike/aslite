@@ -1,0 +1,13 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "ResultSelector": {
+        "a": "x",
+        "b.$": "$.y",
+        "c.$": "$$.z"
+      },
+      "Type": "Fail"
+    }
+  }
+}

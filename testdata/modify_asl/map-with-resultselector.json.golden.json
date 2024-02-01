@@ -1,0 +1,24 @@
+{
+  "StartAt": "m",
+  "States": {
+    "m": {
+      "End": true,
+      "Iterator": {
+        "StartAt": "x",
+        "States": {
+          "x": {
+            "End": true,
+            "Type": "Pass"
+          }
+        }
+      },
+      "Parameters": "$.foo",
+      "ResultSelector": {
+        "a": "x",
+        "b.$": "$.y",
+        "c.$": "$$.z"
+      },
+      "Type": "Map"
+    }
+  }
+}

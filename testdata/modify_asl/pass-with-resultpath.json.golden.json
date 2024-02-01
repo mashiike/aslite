@@ -1,0 +1,13 @@
+{
+  "StartAt": "p",
+  "States": {
+    "p": {
+      "End": true,
+      "Result": {
+        "foo": 1
+      },
+      "ResultPath": "$.foo",
+      "Type": "Pass"
+    }
+  }
+}
